@@ -1,17 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import StatsCards from './components/StatsCards'
 import ApplicationForm from './components/ApplicationForm'
 import ApplicationList from './components/ApplicationLists'
 
 function App() {
-  const [applications, setApplications] = useState([]) //CREATES A STATE VARIABLE TO STORE APPLICATIONS
+
+ const [applications, setApplications] = useState(() => {
+  const savedApplications = localStorage.getItem('applications')
+
+  return savedApplications ? JSON.parse(savedApplications) : []
+}) //CREATES A STATE VARIABLE TO STORE APPLICATIONS
+
 
   const [company, setCompany] = useState('') //STATE VARIABLES
   const [jobTitle, setJobTitle] = useState('')
   const [status, setStatus] = useState('Applied')
 
   const [editingId, setEditingId] = useState(null) //STATE VARIABLE TO STORE THE ID OF THE APPLICATION BEING EDITED
+
+// NEW: Stores the search text
+const [searchTerm, setSearchTerm] = useState('')
+
+// NEW: Stores the selected status filter
+const [statusFilter, setStatusFilter] = useState('All')
+
+// NEW: Saves applications whenever the applications state changes
+useEffect(() => {
+  localStorage.setItem('applications', JSON.stringify(applications))
+}, [applications])
 
   // NEW: Calculates dashboard statistics from the applications array
 const totalApplications = applications.length
@@ -26,6 +43,18 @@ const totalOffers = applications.filter(
   (application) => application.status === 'Offer'
 ).length
 
+
+// NEW: Filters applications based on search text and selected status
+const filteredApplications = applications.filter((application) => {
+  const matchesSearch =
+    application.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    application.jobTitle.toLowerCase().includes(searchTerm.toLowerCase())
+
+  const matchesStatus =
+    statusFilter === 'All' || application.status === statusFilter
+
+  return matchesSearch && matchesStatus
+})
   
 function handleSubmit(event) {
   event.preventDefault()
@@ -129,9 +158,13 @@ function deleteApplication(id) {
 
    {/* NEW: Renders the reusable application list component */}
 <ApplicationList
-  applications={applications}
+  applications={filteredApplications}
   editApplication={editApplication}
   deleteApplication={deleteApplication}
+  searchTerm={searchTerm}
+  setSearchTerm={setSearchTerm}
+  statusFilter={statusFilter}
+  setStatusFilter={setStatusFilter}
  />
   </main>
   )
